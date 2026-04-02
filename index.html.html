@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GlowSense – IoT Smart Cosmetic Device</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap');
+
+  :root {
+    --cream: #F9F4EF;
+    --blush: #E8C4B8;
+    --rose: #C4796B;
+    --dark: #2A1F1A;
+    --muted: #8C6B5E;
+    --light-rose: #F2E0DA;
+    --teal: #4A8B8C;
+    --gold: #C9A96E;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--cream);
+    color: var(--dark);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* SCREENS */
+  .screen { display: none; min-height: 100vh; }
+  .screen.active { display: flex; flex-direction: column; }
+
+  /* ---- SPLASH ---- */
+  #splash {
+    background: linear-gradient(145deg, #2A1F1A 0%, #5C3A2E 50%, #C4796B 100%);
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  #splash::before {
+    content: '';
+    position: absolute;
+    width: 600px; height: 600px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(201,169,110,0.15) 0%, transparent 70%);
+    top: -100px; right: -100px;
+    animation: pulse 4s ease-in-out infinite;
+  }
+
+  @keyframes pulse { 0%,100%{transform:scale(1);opacity:0.5} 50%{transform:scale(1.1);opacity:1} }
+
+  .splash-logo {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 64px;
+    font-weight: 300;
+    color: var(--cream);
+    letter-spacing: 4px;
+    animation: fadeUp 1s ease forwards;
+  }
+
+  .splash-sub {
+    font-size: 13px;
+    color: var(--blush);
+    letter-spacing: 6px;
+    text-transform: uppercase;
+    margin-top: 8px;
+    animation: fadeUp 1s 0.3s ease forwards;
+    opacity: 0;
+  }
+
+  .scan-ring {
+    width: 140px; height: 140px;
+    border-radius: 50%;
+    border: 2px solid rgba(201,169,110,0.4);
+    margin: 40px auto;
+    display: flex; align-items: center; justify-content: center;
+    position: relative;
+    animation: fadeUp 1s 0.5s ease forwards;
+    opacity: 0;
+  }
+
+  .scan-ring::before {
+    content: '';
+    position: absolute;
+    width: 110px; height: 110px;
+    border-radius: 50%;
+    border: 1px solid rgba(201,169,110,0.6);
+    animation: spin 3s linear infinite;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .scan-icon { font-size: 48px; animation: glow 2s ease-in-out infinite; }
+  @keyframes glow { 0%,100%{filter:drop-shadow(0 0 8px #C4796B)} 50%{filter:drop-shadow(0 0 20px #E8C4B8)} }
+
+  .btn-start {
+    background: linear-gradient(135deg, var(--gold), var(--rose));
+    color: white;
+    border: none;
+    padding: 16px 48px;
+    border-radius: 50px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    cursor: pointer;
+    margin-top: 20px;
+    transition: transform 0.2s, box-shadow 0.2s;
+    animation: fadeUp 1s 0.7s ease forwards;
+    opacity: 0;
+  }
+
+  .btn-start:hover { transform: translateY(-2px); box-shadow: 0 12px 40px rgba(196,121,107,0.4); }
+
+  @keyframes fadeUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+
+  /* ---- SCAN ---- */
+  #scan {
+    background: var(--cream);
+    padding: 0;
+  }
+
+  .nav-bar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 20px 24px;
+    border-bottom: 1px solid rgba(196,121,107,0.2);
+  }
+
+  .nav-logo { font-family: 'Cormorant Garamond', serif; font-size: 24px; color: var(--rose); font-weight: 600; }
+  .nav-icon { font-size: 22px; cursor: pointer; }
+
+  .scan-area {
+    flex: 1;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 30px 24px;
+    text-align: center;
+  }
+
+  .face-scanner {
+    width: 220px; height: 280px;
+    border: 2px dashed var(--blush);
+    border-radius: 110px 110px 80px 80px;
+    margin: 0 auto 30px;
+    display: flex; align-items: center; justify-content: center;
+    position: relative;
+    background: var(--light-rose);
+    overflow: hidden;
+  }
+
+  .face-scanner::after {
+    content: '';
+    position: absolute;
+    width: 100%; height: 4px;
+    background: linear-gradient(90deg, transparent, var(--rose), transparent);
+    top: 0;
+    animation: scanLine 2s ease-in-out infinite;
+  }
+
+  @keyframes scanLine { 0%{top:0;opacity:0} 20%{opacity:1} 80%{opacity:1} 100%{top:100%;opacity:0} }
+
+  .face-emoji { font-size: 80px; }
+
+  .scan-label { font-family: 'Cormorant Garamond', serif; font-size: 28px; color: var(--dark); margin-bottom: 8px; }
+  .scan-hint { color: var(--muted); font-size: 14px; line-height: 1.6; max-width: 280px; margin: 0 auto 30px; }
+
+  .progress-bar {
+    width: 280px; height: 4px;
+    background: var(--light-rose);
+    border-radius: 4px;
+    overflow: hidden;
+    margin: 0 auto 12px;
+    display: none;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--blush), var(--rose));
+    width: 0;
+    border-radius: 4px;
+    transition: width 0.1s;
+  }
+
+  .progress-text { color: var(--muted); font-size: 12px; }
+
+  .btn-scan {
+    background: var(--dark);
+    color: var(--cream);
+    border: none;
+    padding: 16px 56px;
+    border-radius: 50px;
+    font-size: 15px;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-top: 10px;
+  }
+
+  .btn-scan:hover { background: var(--rose); transform: translateY(-2px); }
+
+  /* ---- RESULTS ---- */
+  #results {
+    background: var(--cream);
+    flex-direction: column;
+  }
+
+  .results-header {
+    background: linear-gradient(135deg, var(--dark) 0%, #5C3A2E 100%);
+    padding: 30px 24px 40px;
+    color: white;
+    text-align: center;
+  }
+
+  .results-header h2 { font-family: 'Cormorant Garamond', serif; font-size: 32px; font-weight: 300; }
+  .results-header p { color: var(--blush); font-size: 13px; margin-top: 4px; }
+
+  .score-circle {
+    width: 100px; height: 100px;
+    border-radius: 50%;
+    background: conic-gradient(var(--gold) 0deg 270deg, rgba(255,255,255,0.2) 270deg);
+    display: flex; align-items: center; justify-content: center;
+    margin: 20px auto 0;
+    position: relative;
+  }
+
+  .score-circle::before {
+    content: '';
+    position: absolute;
+    width: 80px; height: 80px;
+    border-radius: 50%;
+    background: #3D2419;
+  }
+
+  .score-inner { position: relative; text-align: center; }
+  .score-num { font-family: 'Cormorant Garamond', serif; font-size: 28px; font-weight: 600; color: var(--gold); display: block; }
+  .score-label { font-size: 10px; color: var(--blush); letter-spacing: 1px; text-transform: uppercase; }
+
+  .metrics-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    padding: 24px;
+    margin-top: -16px;
+  }
+
+  .metric-card {
+    background: white;
+    border-radius: 16px;
+    padding: 16px;
+    text-align: center;
+    box-shadow: 0 2px 16px rgba(42,31,26,0.06);
+    animation: fadeUp 0.5s ease forwards;
+    opacity: 0;
+  }
+
+  .metric-card:nth-child(2) { animation-delay: 0.1s; }
+  .metric-card:nth-child(3) { animation-delay: 0.2s; }
+  .metric-card:nth-child(4) { animation-delay: 0.3s; }
+
+  .metric-icon { font-size: 28px; margin-bottom: 6px; }
+  .metric-name { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+  .metric-value { font-family: 'Cormorant Garamond', serif; font-size: 22px; font-weight: 600; color: var(--dark); margin-top: 2px; }
+  .metric-bar { height: 3px; background: var(--light-rose); border-radius: 3px; margin-top: 8px; }
+  .metric-fill { height: 100%; border-radius: 3px; transition: width 1s ease; width: 0; }
+
+  .recommendations {
+    padding: 0 24px 24px;
+  }
+
+  .rec-title { font-family: 'Cormorant Garamond', serif; font-size: 24px; color: var(--dark); margin-bottom: 16px; }
+
+  .rec-card {
+    background: white;
+    border-radius: 16px;
+    padding: 16px;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    box-shadow: 0 2px 12px rgba(42,31,26,0.05);
+    border-left: 3px solid var(--blush);
+    animation: fadeUp 0.5s ease forwards;
+    opacity: 0;
+  }
+
+  .rec-card:nth-child(2) { animation-delay: 0.15s; border-left-color: var(--rose); }
+  .rec-card:nth-child(3) { animation-delay: 0.3s; border-left-color: var(--gold); }
+
+  .rec-emoji { font-size: 32px; }
+  .rec-name { font-weight: 500; font-size: 15px; color: var(--dark); }
+  .rec-desc { font-size: 12px; color: var(--muted); margin-top: 2px; line-height: 1.5; }
+  .rec-badge { display: inline-block; background: var(--light-rose); color: var(--rose); font-size: 10px; padding: 2px 8px; border-radius: 20px; margin-top: 6px; }
+
+  .btn-retake {
+    display: block;
+    margin: 0 24px 24px;
+    background: transparent;
+    border: 1.5px solid var(--rose);
+    color: var(--rose);
+    padding: 14px;
+    border-radius: 50px;
+    font-size: 14px;
+    letter-spacing: 1px;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.2s;
+  }
+
+  .btn-retake:hover { background: var(--rose); color: white; }
+
+  /* ---- PROFILE ---- */
+  #profile {
+    background: var(--cream);
+  }
+
+  .profile-header {
+    background: linear-gradient(135deg, #4A8B8C, #2A6B6C);
+    padding: 40px 24px 30px;
+    text-align: center;
+    color: white;
+  }
+
+  .avatar { font-size: 64px; margin-bottom: 12px; }
+  .profile-name { font-family: 'Cormorant Garamond', serif; font-size: 28px; font-weight: 300; }
+  .profile-type { font-size: 12px; letter-spacing: 3px; text-transform: uppercase; color: rgba(255,255,255,0.7); margin-top: 4px; }
+
+  .streak-bar {
+    background: rgba(255,255,255,0.15);
+    border-radius: 12px;
+    padding: 12px 20px;
+    margin-top: 16px;
+    display: flex;
+    justify-content: space-around;
+  }
+
+  .streak-item { text-align: center; }
+  .streak-num { font-family: 'Cormorant Garamond', serif; font-size: 24px; font-weight: 600; }
+  .streak-lbl { font-size: 10px; opacity: 0.7; text-transform: uppercase; letter-spacing: 1px; }
+
+  .history-section { padding: 24px; }
+  .hist-title { font-family: 'Cormorant Garamond', serif; font-size: 24px; margin-bottom: 16px; }
+
+  .history-item {
+    display: flex; align-items: center; gap: 14px;
+    background: white;
+    border-radius: 14px;
+    padding: 14px;
+    margin-bottom: 10px;
+    box-shadow: 0 2px 10px rgba(42,31,26,0.05);
+  }
+
+  .hist-icon { font-size: 28px; }
+  .hist-date { font-size: 11px; color: var(--muted); }
+  .hist-score { font-family: 'Cormorant Garamond', serif; font-size: 20px; font-weight: 600; margin-left: auto; color: var(--rose); }
+  .hist-name { font-weight: 500; font-size: 14px; }
+
+  /* ---- BOTTOM NAV ---- */
+  .bottom-nav {
+    display: flex;
+    background: white;
+    border-top: 1px solid rgba(196,121,107,0.15);
+    padding: 12px 0 6px;
+    position: sticky;
+    bottom: 0;
+    z-index: 100;
+  }
+
+  .nav-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+    padding: 4px;
+    transition: all 0.2s;
+  }
+
+  .nav-item .ni { font-size: 22px; }
+  .nav-item .nl { font-size: 10px; color: var(--muted); letter-spacing: 0.5px; }
+  .nav-item.active .nl { color: var(--rose); }
+  .nav-item.active .ni { filter: drop-shadow(0 0 4px var(--rose)); }
+
+  /* ---- MODAL ---- */
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(42,31,26,0.5);
+    backdrop-filter: blur(4px);
+    z-index: 200;
+    display: flex;
+    align-items: flex-end;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+  }
+
+  .modal-overlay.show { opacity: 1; pointer-events: all; }
+
+  .modal-sheet {
+    background: var(--cream);
+    border-radius: 24px 24px 0 0;
+    padding: 24px;
+    width: 100%;
+    transform: translateY(100%);
+    transition: transform 0.4s cubic-bezier(0.34,1.56,0.64,1);
+  }
+
+  .modal-overlay.show .modal-sheet { transform: translateY(0); }
+
+  .modal-handle { width: 40px; height: 4px; background: var(--blush); border-radius: 4px; margin: 0 auto 20px; }
+  .modal-title { font-family: 'Cormorant Garamond', serif; font-size: 26px; margin-bottom: 8px; }
+  .modal-desc { color: var(--muted); font-size: 14px; line-height: 1.7; }
+
+  .env-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 16px; }
+  .env-tag {
+    background: white;
+    border-radius: 12px;
+    padding: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    box-shadow: 0 2px 8px rgba(42,31,26,0.06);
+  }
+
+  .env-icon { font-size: 20px; }
+  .env-val { font-weight: 500; font-size: 13px; }
+  .env-lbl { font-size: 10px; color: var(--muted); }
+
+  .btn-modal-close {
+    width: 100%;
+    margin-top: 20px;
+    background: var(--dark);
+    color: var(--cream);
+    border: none;
+    padding: 14px;
+    border-radius: 50px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+
+  .btn-modal-close:hover { background: var(--rose); }
+
+  /* scrollable results */
+  #results, #profile { overflow-y: auto; max-height: 100vh; }
+</style>
+</head>
+<body>
+
+<!-- SPLASH SCREEN -->
+<div id="splash" class="screen active">
+  <div>
+    <div class="splash-logo">GlowSense</div>
+    <div class="splash-sub">IoT Smart Cosmetic Device</div>
+    <div class="scan-ring">
+      <span class="scan-icon">✨</span>
+    </div>
+    <p style="color:rgba(232,196,184,0.8);font-size:14px;line-height:1.7;max-width:280px;margin:0 auto 10px;">
+      Real-time skin analysis powered by IoT sensors & AI — personalized beauty begins here.
+    </p>
+    <button class="btn-start" onclick="showScreen('scan')">Begin Analysis</button>
+  </div>
+</div>
+
+<!-- SCAN SCREEN -->
+<div id="scan" class="screen">
+  <div class="nav-bar">
+    <div class="nav-logo">GlowSense</div>
+    <span class="nav-icon" onclick="showModal()">🌡️</span>
+  </div>
+
+  <div class="scan-area">
+    <div class="face-scanner">
+      <span class="face-emoji">🙂</span>
+    </div>
+
+    <div class="scan-label" id="scanLabel">Position Your Face</div>
+    <p class="scan-hint" id="scanHint">
+      Hold your device 15–20 cm from your face. The IoT sensor will analyze skin hydration, oil levels & more.
+    </p>
+
+    <div class="progress-bar" id="progressBar">
+      <div class="progress-fill" id="progressFill"></div>
+    </div>
+    <p class="progress-text" id="progressText"></p>
+
+    <button class="btn-scan" id="scanBtn" onclick="startScan()">Start Skin Scan</button>
+  </div>
+
+  <div class="bottom-nav">
+    <div class="nav-item active" onclick="showScreen('scan')">
+      <span class="ni">🔬</span><span class="nl">Scan</span>
+    </div>
+    <div class="nav-item" onclick="showScreen('results')">
+      <span class="ni">📊</span><span class="nl">Results</span>
+    </div>
+    <div class="nav-item" onclick="showScreen('profile')">
+      <span class="ni">👤</span><span class="nl">Profile</span>
+    </div>
+  </div>
+</div>
+
+<!-- RESULTS SCREEN -->
+<div id="results" class="screen">
+  <div class="results-header">
+    <h2>Your Skin Report</h2>
+    <p id="resultDate">Today's Analysis</p>
+    <div class="score-circle">
+      <div class="score-inner">
+        <span class="score-num" id="overallScore">75</span>
+        <span class="score-label">Health</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="metrics-grid">
+    <div class="metric-card">
+      <div class="metric-icon">💧</div>
+      <div class="metric-name">Hydration</div>
+      <div class="metric-value" id="metHydration">62%</div>
+      <div class="metric-bar"><div class="metric-fill" id="fillHydration" style="background:#4A8B8C"></div></div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-icon">🫧</div>
+      <div class="metric-name">Oil Level</div>
+      <div class="metric-value" id="metOil">38%</div>
+      <div class="metric-bar"><div class="metric-fill" id="fillOil" style="background:#C4796B"></div></div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-icon">✨</div>
+      <div class="metric-name">Radiance</div>
+      <div class="metric-value" id="metRadiance">71%</div>
+      <div class="metric-bar"><div class="metric-fill" id="fillRadiance" style="background:#C9A96E"></div></div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-icon">🛡️</div>
+      <div class="metric-name">Barrier</div>
+      <div class="metric-value" id="metBarrier">80%</div>
+      <div class="metric-bar"><div class="metric-fill" id="fillBarrier" style="background:#8B6BAC"></div></div>
+    </div>
+  </div>
+
+  <div class="recommendations">
+    <div class="rec-title">AI Recommendations</div>
+
+    <div class="rec-card">
+      <span class="rec-emoji">🌿</span>
+      <div>
+        <div class="rec-name" id="rec1name">Hyaluronic Acid Serum</div>
+        <div class="rec-desc" id="rec1desc">Your hydration is below optimal. Apply 2–3 drops on damp skin morning and evening.</div>
+        <span class="rec-badge" id="rec1badge">High Priority</span>
+      </div>
+    </div>
+
+    <div class="rec-card">
+      <span class="rec-emoji">☀️</span>
+      <div>
+        <div class="rec-name" id="rec2name">SPF 50 Sunscreen</div>
+        <div class="rec-desc" id="rec2desc">UV index is elevated in your location. Apply generously before stepping outdoors.</div>
+        <span class="rec-badge" id="rec2badge">Daily Essential</span>
+      </div>
+    </div>
+
+    <div class="rec-card">
+      <span class="rec-emoji">🌙</span>
+      <div>
+        <div class="rec-name" id="rec3name">Niacinamide Night Cream</div>
+        <div class="rec-desc" id="rec3desc">Supports skin barrier repair during overnight recovery. Use 3x per week.</div>
+        <span class="rec-badge" id="rec3badge">Evening Routine</span>
+      </div>
+    </div>
+  </div>
+
+  <button class="btn-retake" onclick="showScreen('scan')">↩ Retake Scan</button>
+
+  <div class="bottom-nav">
+    <div class="nav-item" onclick="showScreen('scan')">
+      <span class="ni">🔬</span><span class="nl">Scan</span>
+    </div>
+    <div class="nav-item active" onclick="showScreen('results')">
+      <span class="ni">📊</span><span class="nl">Results</span>
+    </div>
+    <div class="nav-item" onclick="showScreen('profile')">
+      <span class="ni">👤</span><span class="nl">Profile</span>
+    </div>
+  </div>
+</div>
+
+<!-- PROFILE SCREEN -->
+<div id="profile" class="screen">
+  <div class="profile-header">
+    <div class="avatar">👩</div>
+    <div class="profile-name">Riya Sharma</div>
+    <div class="profile-type">Combination Skin · Age 24</div>
+    <div class="streak-bar">
+      <div class="streak-item">
+        <div class="streak-num">12</div>
+        <div class="streak-lbl">Day Streak</div>
+      </div>
+      <div class="streak-item">
+        <div class="streak-num">38</div>
+        <div class="streak-lbl">Total Scans</div>
+      </div>
+      <div class="streak-item">
+        <div class="streak-num">+9%</div>
+        <div class="streak-lbl">Improvement</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="history-section">
+    <div class="hist-title">Scan History</div>
+
+    <div class="history-item">
+      <span class="hist-icon">🔬</span>
+      <div>
+        <div class="hist-name">Morning Scan</div>
+        <div class="hist-date">Today, 7:42 AM</div>
+      </div>
+      <div class="hist-score">75</div>
+    </div>
+
+    <div class="history-item">
+      <span class="hist-icon">🔬</span>
+      <div>
+        <div class="hist-name">Evening Scan</div>
+        <div class="hist-date">Yesterday, 9:15 PM</div>
+      </div>
+      <div class="hist-score">69</div>
+    </div>
+
+    <div class="history-item">
+      <span class="hist-icon">🔬</span>
+      <div>
+        <div class="hist-name">Post-Workout Scan</div>
+        <div class="hist-date">Feb 27, 6:30 PM</div>
+      </div>
+      <div class="hist-score">58</div>
+    </div>
+
+    <div class="history-item">
+      <span class="hist-icon">🔬</span>
+      <div>
+        <div class="hist-name">Morning Scan</div>
+        <div class="hist-date">Feb 26, 8:00 AM</div>
+      </div>
+      <div class="hist-score">72</div>
+    </div>
+  </div>
+
+  <div class="bottom-nav">
+    <div class="nav-item" onclick="showScreen('scan')">
+      <span class="ni">🔬</span><span class="nl">Scan</span>
+    </div>
+    <div class="nav-item" onclick="showScreen('results')">
+      <span class="ni">📊</span><span class="nl">Results</span>
+    </div>
+    <div class="nav-item active" onclick="showScreen('profile')">
+      <span class="ni">👤</span><span class="nl">Profile</span>
+    </div>
+  </div>
+</div>
+
+<!-- ENVIRONMENT MODAL -->
+<div class="modal-overlay" id="envModal" onclick="hideModal(event)">
+  <div class="modal-sheet" onclick="event.stopPropagation()">
+    <div class="modal-handle"></div>
+    <div class="modal-title">🌍 Environment Data</div>
+    <div class="modal-desc">Live IoT sensor readings from your surroundings — used to enhance your personalized skincare recommendations.</div>
+    <div class="env-grid">
+      <div class="env-tag"><span class="env-icon">🌡️</span><div><div class="env-val">28°C</div><div class="env-lbl">Temperature</div></div></div>
+      <div class="env-tag"><span class="env-icon">💦</span><div><div class="env-val">65%</div><div class="env-lbl">Humidity</div></div></div>
+      <div class="env-tag"><span class="env-icon">☀️</span><div><div class="env-val">UV 7 (High)</div><div class="env-lbl">UV Index</div></div></div>
+      <div class="env-tag"><span class="env-icon">🏭</span><div><div class="env-val">AQI 142</div><div class="env-lbl">Pollution</div></div></div>
+    </div>
+    <button class="btn-modal-close" onclick="hideModal()">Done</button>
+  </div>
+</div>
+
+<script>
+  function showScreen(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    if (id === 'results') animateMetrics();
+  }
+
+  function showModal() {
+    document.getElementById('envModal').classList.add('show');
+  }
+
+  function hideModal(e) {
+    document.getElementById('envModal').classList.remove('show');
+  }
+
+  function startScan() {
+    const btn = document.getElementById('scanBtn');
+    const bar = document.getElementById('progressBar');
+    const fill = document.getElementById('progressFill');
+    const label = document.getElementById('scanLabel');
+    const hint = document.getElementById('scanHint');
+    const ptext = document.getElementById('progressText');
+
+    btn.disabled = true;
+    btn.textContent = 'Scanning...';
+    bar.style.display = 'block';
+
+    const steps = [
+      { w: 20, msg: 'Detecting skin tone...' },
+      { w: 45, msg: 'Measuring hydration levels...' },
+      { w: 65, msg: 'Analysing oil balance...' },
+      { w: 80, msg: 'Reading environmental data...' },
+      { w: 95, msg: 'Running AI analysis...' },
+      { w: 100, msg: 'Complete!' },
+    ];
+
+    label.textContent = 'Scanning...';
+    hint.textContent = 'Please stay still while our IoT sensors collect your skin data.';
+
+    let i = 0;
+    const interval = setInterval(() => {
+      if (i >= steps.length) {
+        clearInterval(interval);
+        setTimeout(() => {
+          generateResults();
+          showScreen('results');
+          btn.disabled = false;
+          btn.textContent = 'Start Skin Scan';
+          bar.style.display = 'none';
+          fill.style.width = '0';
+          label.textContent = 'Position Your Face';
+          hint.textContent = 'Hold your device 15–20 cm from your face. The IoT sensor will analyze skin hydration, oil levels & more.';
+          ptext.textContent = '';
+        }, 400);
+        return;
+      }
+      fill.style.width = steps[i].w + '%';
+      ptext.textContent = steps[i].msg;
+      i++;
+    }, 600);
+  }
+
+  function generateResults() {
+    const hydration = 40 + Math.floor(Math.random() * 50);
+    const oil = 20 + Math.floor(Math.random() * 60);
+    const radiance = 50 + Math.floor(Math.random() * 45);
+    const barrier = 55 + Math.floor(Math.random() * 40);
+    const overall = Math.round((hydration + (100 - oil) + radiance + barrier) / 4 * 0.75 + 15);
+
+    document.getElementById('metHydration').textContent = hydration + '%';
+    document.getElementById('metOil').textContent = oil + '%';
+    document.getElementById('metRadiance').textContent = radiance + '%';
+    document.getElementById('metBarrier').textContent = barrier + '%';
+    document.getElementById('overallScore').textContent = Math.min(overall, 99);
+
+    document.getElementById('fillHydration').setAttribute('data-w', hydration);
+    document.getElementById('fillOil').setAttribute('data-w', oil);
+    document.getElementById('fillRadiance').setAttribute('data-w', radiance);
+    document.getElementById('fillBarrier').setAttribute('data-w', barrier);
+
+    const now = new Date();
+    document.getElementById('resultDate').textContent = now.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' });
+
+    if (hydration < 50) {
+      document.getElementById('rec1name').textContent = 'Hyaluronic Acid Serum';
+      document.getElementById('rec1desc').textContent = 'Hydration is critically low. Apply 3 drops on damp skin twice daily.';
+      document.getElementById('rec1badge').textContent = 'Urgent';
+    } else {
+      document.getElementById('rec1name').textContent = 'Lightweight Moisturiser';
+      document.getElementById('rec1desc').textContent = 'Maintain your hydration with a water-based gel moisturiser every morning.';
+      document.getElementById('rec1badge').textContent = 'Recommended';
+    }
+
+    if (oil > 55) {
+      document.getElementById('rec2name').textContent = 'Oil-Control Toner';
+      document.getElementById('rec2desc').textContent = 'Oily T-zone detected. Use a niacinamide toner to balance sebum levels.';
+      document.getElementById('rec2badge').textContent = 'For Oily Skin';
+    }
+  }
+
+  function animateMetrics() {
+    ['fillHydration', 'fillOil', 'fillRadiance', 'fillBarrier'].forEach(id => {
+      const el = document.getElementById(id);
+      const w = el.getAttribute('data-w') || 60;
+      setTimeout(() => { el.style.width = w + '%'; }, 200);
+    });
+  }
+</script>
+</body>
+</html>
